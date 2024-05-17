@@ -1,8 +1,3 @@
-import nltk
-import pickle
-import argparse
-from collections import Counter
-
 
 class Vocabulary(object):
     """Simple vocabulary wrapper."""
@@ -23,5 +18,8 @@ class Vocabulary(object):
         return self.word2idx[word]
 
     def __len__(self):
+        """
+        returns the index of the word in the vocabulary
+        """
         return len(self.word2idx)
 
