@@ -7,6 +7,7 @@ class Vocabulary(object):
         self.idx = 0
 
     def add_word(self, word):
+        """adds a word to the vocabulary"""
         if not word in self.word2idx:
             self.word2idx[word] = self.idx
             self.idx2word[self.idx] = word
