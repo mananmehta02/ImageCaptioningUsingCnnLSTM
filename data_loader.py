@@ -3,6 +3,7 @@ import os
 import torch.utils.data
 from torch.utils.data import Dataset
 from PIL import Image
+from build_vocabulary import build_vocab
 
 
 class Flickr8k(Dataset):
@@ -12,6 +13,8 @@ class Flickr8k(Dataset):
         self.caption_path = caption_path
         self.captions = self.get_captions()
         self.transform = transform
+        self.vocab = build_vocab(self.captions)
+        self.vocab_size = len(self.vocab)
 
     def __len__(self):
         return len(self.image_labels)
@@ -20,9 +23,19 @@ class Flickr8k(Dataset):
         img_path = os.path.join(self.image_path, self.image_labels[idx])
         image = Image.open(img_path)
         captions = self.captions[self.image_labels[idx]]
+        tokenized_captions = []
+        for caption in captions:
+            tokenized_captions.append(self.tokenize(caption))
         if self.transform:
             image = self.transform(image)
-        return image, captions
+        return image, torch.tensor(tokenized_captions)
+
+    def tokenize(self, caption):
+        tokens = caption.strip().lower().split()
+        tokenized_caption = []
+        for token in tokens:
+            tokenized_caption.append(self.vocab.word2idx[token] if token in self.vocab.word2idx else self.vocab.word2idx['<unk>'])
+        return tokenized_caption
 
     def get_captions(self):
         captions = {}
@@ -59,4 +72,4 @@ def get_loader(image_path, caption_path, transform=None, batch_size=8, shuffle=T
     data_loader = torch.utils.data.DataLoader(dataset=flickr, batch_size=batch_size, shuffle=shuffle,
                                               num_workers=num_workers, collate_fn=custom_collate_fn)
     print("Executed get loader successfully")
-    return data_loader
+    return data_loader, flickr.vocab_size

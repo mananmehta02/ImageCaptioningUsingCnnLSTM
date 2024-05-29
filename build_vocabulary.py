@@ -1,6 +1,6 @@
-
 class Vocabulary(object):
     """Simple vocabulary wrapper."""
+
     def __init__(self):
         self.word2idx = {}
         self.idx2word = {}
@@ -26,17 +26,19 @@ class Vocabulary(object):
 
     def __len__(self):
         """
-        returns the index of the word in the vocabulary
+        returns the size of the vocabulary
         """
         return len(self.word2idx)
 
     def idx_to_word(self, idx):
         return self.idx2word[idx]
 
-def build_vocab(captions):
+
+def build_vocab(captions_dict):
     vocab = Vocabulary()
-    for caption in captions:
-        tokens = caption.split(' ')
-        for token in tokens:
-            vocab.add_word(token)
+    for captions in captions_dict.values():
+        for caption in captions:
+            tokens = caption.split(' ')
+            for token in tokens:
+                vocab.add_word(token.lower())
     return vocab
