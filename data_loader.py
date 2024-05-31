@@ -1,6 +1,7 @@
 import os
 
 import torch.utils.data
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 from PIL import Image
 from build_vocabulary import build_vocab
@@ -21,20 +22,21 @@ class Flickr8k(Dataset):
 
     def __getitem__(self, idx):
         img_path = os.path.join(self.image_path, self.image_labels[idx])
-        image = Image.open(img_path)
+        image = Image.open(img_path).convert("RGB")
         captions = self.captions[self.image_labels[idx]]
         tokenized_captions = []
         for caption in captions:
             tokenized_captions.append(self.tokenize(caption))
         if self.transform:
             image = self.transform(image)
-        return image, torch.tensor(tokenized_captions)
+        return image, tokenized_captions
 
     def tokenize(self, caption):
         tokens = caption.strip().lower().split()
-        tokenized_caption = []
+        tokenized_caption = [self.vocab.word2idx['<start>']]
         for token in tokens:
             tokenized_caption.append(self.vocab.word2idx[token] if token in self.vocab.word2idx else self.vocab.word2idx['<unk>'])
+        tokenized_caption.append(self.vocab.word2idx['<end>'])
         return tokenized_caption
 
     def get_captions(self):
@@ -51,19 +53,19 @@ class Flickr8k(Dataset):
 
 
 def custom_collate_fn(batch):
-    images, all_captions = zip(*batch)
+    images, captions_list = zip(*batch)
 
     # Stack images into a batch
     images = torch.stack(images, dim=0)
 
-    # Flatten the list of captions
-    captions = []
+    padded_captions = []
     lengths = []
-    for caption_list in all_captions:
-        lengths.append(len(caption_list))
-        captions.extend(caption_list)
+    for captions in captions_list:
+        lengths.extend([len(caption) for caption in captions])
+        padded_captions.extend([torch.tensor(caption) for caption in captions])
 
-    return images, captions, lengths
+    padded_captions = pad_sequence(padded_captions, batch_first=True, padding_value=0)
+    return images, padded_captions, lengths
 
 
 def get_loader(image_path, caption_path, transform=None, batch_size=8, shuffle=True, num_workers=1):

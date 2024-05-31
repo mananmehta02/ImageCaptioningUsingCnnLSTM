@@ -22,7 +22,7 @@ def train(image_path, caption_path, num_epochs=5, learning_rate=0.001, model_pat
 
     encoder = EncoderCNN(embed_size=256).to(device)
     decoder = DecoderRNN(embed_size=256, vocab_size=
-    vocab_size, hidden_size=512, num_layers=1, max_seq_length=20)
+    vocab_size, hidden_size=512, num_layers=1, max_seq_length=20).to(device)
 
     criterion = nn.CrossEntropyLoss()
     params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
@@ -32,11 +32,9 @@ def train(image_path, caption_path, num_epochs=5, learning_rate=0.001, model_pat
     print(type(data_loader))
     for epoch in range(num_epochs):
         for i, (images, captions, lengths) in enumerate(data_loader):
-            print(type(images))
-            print(captions)
             images = images.to(device)
             captions = captions.to(device)
-            targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
+            targets = pack_padded_sequence(captions, lengths, batch_first=True, enforce_sorted=False)[0]
 
             features = encoder(images)
             outputs = decoder(features, captions, lengths)
@@ -45,6 +43,8 @@ def train(image_path, caption_path, num_epochs=5, learning_rate=0.001, model_pat
             encoder.zero_grad()
             loss.backward()
             optimizer.step()
+            if i % 10 == 0:  # Print every 10th batch
+                print(f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{total_step}], Loss: {loss.item():.4f}')
 
     torch.save(decoder.state_dict(), os.path.join(model_path, 'decoder.ckpt'))
 

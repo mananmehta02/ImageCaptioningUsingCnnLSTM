@@ -31,8 +31,9 @@ class DecoderRNN(nn.Module):
 
     def forward(self, features, captions, lengths):
         embeddings = self.embed(captions)
+        features = features.unsqueeze(1).repeat(1, 5, 1).view(-1, features.size(-1))
         embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
-        packed = pack_padded_sequence(embeddings, lengths, batch_first=True)
+        packed = pack_padded_sequence(embeddings, lengths, batch_first=True, enforce_sorted=False)
         hiddens, _ = self.lstm(packed)
         outputs = self.linear(hiddens[0])
         return outputs
@@ -41,7 +42,7 @@ class DecoderRNN(nn.Module):
         """Generate captions for given image features using greedy search."""
         sampled_ids = []
         inputs = features.unsqueeze(1)
-        for i in range(self.max_seg_length):
+        for i in range(self.max_seq_length):
             hiddens, states = self.lstm(inputs, states)  # hiddens: (batch_size, 1, hidden_size)
             outputs = self.linear(hiddens.squeeze(1))  # outputs:  (batch_size, vocab_size)
             _, predicted = outputs.max(1)  # predicted: (batch_size)
