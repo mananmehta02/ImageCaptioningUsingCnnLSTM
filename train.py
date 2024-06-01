@@ -29,7 +29,6 @@ def train(image_path, caption_path, num_epochs=5, learning_rate=0.001, model_pat
     optimizer = torch.optim.Adam(params, lr=learning_rate)
 
     total_step = len(data_loader)
-    print(type(data_loader))
     for epoch in range(num_epochs):
         for i, (images, captions, lengths) in enumerate(data_loader):
             images = images.to(device)
